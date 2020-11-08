@@ -1,0 +1,205 @@
+version: "3.3"
+services:
+  nacos:
+    image: nacos/nacos-server
+    ports:
+      - "8848:8848"
+    deploy:
+      placement:
+        constraints: [node.labels.usage == manager]
+      replicas: 1
+      update_config:
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.80'
+          memory: 1024M
+        reservations:
+          memory: 200M
+
+  rocketmq:
+    image: apacherocketmq/rocketmq:4.5.0-alpine
+    ports:
+      - "9876:9876"
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./logs/rocketmq:/home/rocketmq/logs
+      - ./data/rocketmq-data:/home/rocketmq/store
+    configs:
+      - source: rocketmq-broker-conf
+        target: /home/rocketmq/rocketmq-4.5.0/conf/broker.conf
+      - source: rocketmq-start-sh
+        target: /home/rocketmq/rocketmq-4.5.0/rocketmq-start.sh
+    entrypoint:
+      - /bin/bash
+      - -c
+      - " bash /home/rocketmq/rocketmq-4.5.0/rocketmq-start.sh && tail -f /dev/null"
+    deploy:
+      placement:
+        constraints: [node.labels.usage == manager]
+      replicas: 1
+      update_config:
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.80'
+          memory: 1536M
+        reservations:
+          memory: 200M
+
+#    rocketmq-namesrv:
+#    image: apacherocketmq/rocketmq:4.5.0-alpine
+#    container_name: rocketmq-namesrv
+#    ports:
+#      - "9876:9876"
+#    volumes:
+#      - ./logs/rocketmq/namesrv:/home/rocketmq/logs
+#    entrypoint:
+#      - /bin/bash
+#      - -c
+#      - " mqnamesrv "
+#    deploy:
+#      placement:
+#        constraints: [node.labels.usage == manager]
+#      replicas: 1
+#      update_config:
+#        delay: 10s
+#      restart_policy:
+#        condition: on-failure
+#      resources:
+#        limits:
+#          cpus: '0.80'
+#          memory: 1024M
+#        reservations:
+#          memory: 200M
+#
+#  rocketmq-broker:
+#    image: apacherocketmq/rocketmq:4.5.0-alpine
+#    container_name: rocketmq-broker
+#    ports:
+#      - "10909:10909"
+#      - "10911:10911"
+#      - "10912:10912"
+#    volumes:
+#      - ./logs/rocketmq/broker:/home/rocketmq/logs
+#      - ./data/rocketmq-data:/home/rocketmq/store
+#    configs:
+#      - source: rocketmq-broker-conf
+#        target: /home/rocketmq/rocketmq-4.5.0/conf/broker.conf
+#    entrypoint:
+#      - /bin/bash
+#      - -c
+#      - " mqbroker -n namesrv:9876 -c ../conf/broker.conf "
+#    depends_on:
+#      - namesrv
+#    deploy:
+#      placement:
+#        constraints: [node.labels.usage == manager]
+#      replicas: 1
+#      update_config:
+#        delay: 10s
+#      restart_policy:
+#        condition: on-failure
+#      resources:
+#        limits:
+#          cpus: '0.80'
+#          memory: 1024M
+#        reservations:
+#          memory: 200M
+
+#  redis:
+#    image: redis:5.0
+#    volumes:
+#       - "./data/redis-data:/data"
+#       - "./logs/redis/redis-logs:/log"
+#    configs:
+#      - source: redis-conf
+#        target: /configs/redis.conf
+#    ports:
+#      - "6379:6379"
+#    networks:
+#      - dev-swarm-overlay-network
+#    entrypoint:
+#      - /bin/bash
+#      - -c
+#      - " redis-server /configs/redis.conf --requirepass 'Nciae666' && \
+#         tail -f /dev/null"
+#    deploy:
+#      placement:
+#        constraints: [node.labels.usage == manager]
+#      replicas: 1
+#      update_config:
+#        delay: 10s
+#      restart_policy:
+#        condition: on-failure
+#      resources:
+#        limits:
+#          cpus: '1.0'
+#          memory: 1024M
+#        reservations:
+#          memory: 200M
+
+  mysql:
+    image: mysql:5.7.23
+    volumes:
+      - "./data/mysql-data:/var/lib/mysql"
+    configs:
+      - source: mysql-cnf
+        target: /etc/mysql/conf.d/mysql.cnf
+    networks:
+      - dev-swarm-overlay-network
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: nciae
+      MYSQL_DATABASE: nciae_db
+      MYSQL_USER: nciae
+      MYSQL_PASSWORD: nciae
+    deploy:
+      placement:
+        constraints: [node.labels.usage == manager]
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 1024M
+        reservations:
+          memory: 200M
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    networks:
+      - dev-swarm-overlay-network
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m30s
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+
+networks:
+  dev-swarm-overlay-network:
+
+configs:
+
+  mysql-cnf:
+    file: ./configs/mysql/mysql.cnf
+
+  redis-conf:
+    file: ./configs/redis/redis.conf
+
+  rocketmq-start-sh:
+    file: ./configs/rocketmq/rocketmq-start.sh
+
+  rocketmq-broker-conf:
+    file: ./configs/rocketmq/broker.conf
+
