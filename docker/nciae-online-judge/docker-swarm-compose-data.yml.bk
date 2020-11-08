@@ -1,11 +1,9 @@
 version: "3.3"
 services:
   nacos:
-    image: nacos-server-rs:0.0.1.SNAPSHOT
+    image: nacos/nacos-server
     ports:
       - "8848:8848"
-    networks:
-      - docker-swarm-overlay-network
     deploy:
       placement:
         constraints: [node.labels.usage == manager]
@@ -36,8 +34,6 @@ services:
         target: /home/rocketmq/rocketmq-4.5.0/conf/broker.conf
       - source: rocketmq-start-sh
         target: /home/rocketmq/rocketmq-4.5.0/rocketmq-start.sh
-    networks:
-      - docker-swarm-overlay-network    
     entrypoint:
       - /bin/bash
       - -c
@@ -157,12 +153,12 @@ services:
       - source: mysql-cnf
         target: /etc/mysql/conf.d/mysql.cnf
     networks:
-      - docker-swarm-overlay-network
+      - dev-swarm-overlay-network
     ports:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: nciae
-      MYSQL_DATABASE: mysql
+      MYSQL_DATABASE: nciae_db
       MYSQL_USER: nciae
       MYSQL_PASSWORD: nciae
     deploy:
@@ -179,7 +175,7 @@ services:
   visualizer:
     image: dockersamples/visualizer:stable
     networks:
-      - docker-swarm-overlay-network
+      - dev-swarm-overlay-network
     ports:
       - "8080:8080"
     stop_grace_period: 1m30s
@@ -191,7 +187,7 @@ services:
 
 
 networks:
-  docker-swarm-overlay-network:
+  dev-swarm-overlay-network:
 
 configs:
 
