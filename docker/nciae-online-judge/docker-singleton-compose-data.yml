@@ -1,0 +1,83 @@
+version: "3.3"
+services:
+  nacos:
+    image: nacos-server-rs:0.0.1.SNAPSHOT
+    ports:
+      - "8848:8848"
+    networks:
+      - docker-swarm-overlay-network
+
+  rocketmq:
+    image: apacherocketmq/rocketmq:4.5.0-alpine
+    ports:
+      - "9876:9876"
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./logs/rocketmq:/home/rocketmq/logs
+      - ./data/rocketmq-data:/home/rocketmq/store
+    configs:
+      - source: rocketmq-broker-conf
+        target: /home/rocketmq/rocketmq-4.5.0/conf/broker.conf
+      - source: rocketmq-start-sh
+        target: /home/rocketmq/rocketmq-4.5.0/rocketmq-start.sh
+    networks:
+      - docker-swarm-overlay-network    
+    entrypoint:
+      - /bin/bash
+      - -c
+      - " bash /home/rocketmq/rocketmq-4.5.0/rocketmq-start.sh && tail -f /dev/null"
+
+  rocketmq-namesrv:
+    image: rocketmqinc/rocketmq-namesrv:4.5.0-alpine
+    ports:
+      - "9876:9876"
+    networks:
+      - docker-swarm-overlay-network
+  
+  rocketmq-broker:
+    image: rocketmqinc/rocketmq-broker:4.5.0-alpine
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./logs/rocketmq:/home/rocketmq/logs
+      - ./logs/rocketmq-data:/home/rocketmq/store
+      - ./configs/rocketmq:/root/rocketmq-4.5.0/conf
+    links:
+      - "rocketmq-namesrv:namesrv"
+    depends_on:
+      - rocketmq-namesrv
+
+  mysql:
+    image: mysql:5.7.23
+    volumes:
+      - "./data/mysql-data:/var/lib/mysql"
+    configs:
+      - source: mysql-cnf
+        target: /etc/mysql/conf.d/mysql.cnf
+    networks:
+      - docker-swarm-overlay-network
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: nciae
+      MYSQL_DATABASE: mysql
+      MYSQL_USER: nciae
+      MYSQL_PASSWORD: nciae
+
+  visualizer:
+    image: dockersamples/visualizer:stable
+    networks:
+      - docker-swarm-overlay-network
+    ports:
+      - "8080:8080"
+    stop_grace_period: 1m30s
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+
+networks:
+  docker-swarm-overlay-network:

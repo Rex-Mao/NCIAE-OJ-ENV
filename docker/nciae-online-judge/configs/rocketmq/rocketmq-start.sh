@@ -1,4 +1,4 @@
 #!/bin/bash
 
-/bin/bash mqnamesrv
-/bin/bash mqbroker -n namesrv:9876 -c ../conf/broker.conf
+# /bin/bash bin/mqnamesrv
+# /bin/bash bin/mqbroker -n namesrv:9876 -c ../conf/broker.conf

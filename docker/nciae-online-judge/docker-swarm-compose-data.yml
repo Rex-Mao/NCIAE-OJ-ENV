@@ -22,7 +22,7 @@ services:
           memory: 200M
 
   rocketmq:
-    image: apacherocketmq/rocketmq:4.5.0-alpine
+    image: apacherocketmq/rocketmq:4.5.0
     ports:
       - "9876:9876"
       - "10909:10909"
@@ -206,4 +206,3 @@ configs:
 
   rocketmq-broker-conf:
     file: ./configs/rocketmq/broker.conf
-
